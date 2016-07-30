@@ -29,13 +29,19 @@ public class CountingTrie extends DoubleArrayTrieImpl {
 
 	private IntegerList existCounts;
 	private IntegerList searchCounts;
-
+	private IntegerList existWordCounts;
+	
+	public CountingTrie() {
+		this(65536);
+	}
 	public CountingTrie(int alphabetLength) {
 		super(alphabetLength);
 		existCounts = IntegerArrayListFactory.newInstance().getNewIntegerList();
 		existCounts.add(0);
 		searchCounts = IntegerArrayListFactory.newInstance().getNewIntegerList();
 		searchCounts.add(0);
+		existWordCounts = IntegerArrayListFactory.newInstance().getNewIntegerList();
+		existWordCounts.add(0);
 	}
 
 	@Override
@@ -46,6 +52,9 @@ public class CountingTrie extends DoubleArrayTrieImpl {
 		}
 		while(searchCounts.size() <= limit) {
 			searchCounts.add(0);
+		}
+		while(existWordCounts.size() <= limit) {
+			existWordCounts.add(0);
 		}
 	}
 
@@ -60,6 +69,10 @@ public class CountingTrie extends DoubleArrayTrieImpl {
 		oldCount = searchCounts.get(getBase(parentIndex)+forCharacter);
 		searchCounts.set(newParentBase+forCharacter, oldCount);
 		searchCounts.set(getBase(parentIndex)+forCharacter, 0);
+		
+		oldCount = existWordCounts.get(getBase(parentIndex)+forCharacter);
+		existWordCounts.set(newParentBase+forCharacter, oldCount);
+		existWordCounts.set(getBase(parentIndex)+forCharacter, 0);
 	}
 
 	@Override
@@ -83,5 +96,13 @@ public class CountingTrie extends DoubleArrayTrieImpl {
 		if (state.index == prefix.size()-1) 
 			return searchCounts.get(state.finishedAtState);
 		else return 0;
+	}
+	
+	public int getExistCountFor(IntegerList prefix) {
+		SearchState state = runPrefix(prefix);
+		if(state.index == prefix.size()) {
+			return existCounts.get(state.finishedAtState);
+		}
+		return 0;
 	}
 }

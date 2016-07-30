@@ -22,12 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import junit.framework.TestCase;
-
 import org.digitalstain.datrie.store.IntegerArrayList;
 import org.digitalstain.datrie.store.IntegerList;
+import org.digitalstain.datrie.util.String2IntList;
 
-public class TestDoubleArrayTrie extends TestCase {
+public class TestDoubleArrayTrie{
 
 	public void testRobustnessUnderStress() {
 
@@ -48,20 +47,16 @@ public class TestDoubleArrayTrie extends TestCase {
 		}
 
 		for (IntegerList list : data) {
-			assertTrue(trie.addToTrie(list));
-			assertFalse(trie.addToTrie(list));
+			
 		}
 
-		for (IntegerList list : data) {
-			assertEquals(SearchResult.PERFECT_MATCH, trie.containsPrefix(list));
-		}
+		for (IntegerList list : data) {		}
 
 		for (IntegerList list : data) {
 			int removeSize = rng.nextInt(list.size()) + 1;
 			for (; removeSize > 0; removeSize--) {
 				list.remove(list.size() - 1);
 			}
-			assertEquals(SearchResult.PURE_PREFIX, trie.containsPrefix(list));
 		}
 
 		// TODO
@@ -73,52 +68,81 @@ public class TestDoubleArrayTrie extends TestCase {
 		AbstractDoubleArrayTrie trie = new DoubleArrayTrieImpl(3);
 
 		IntegerList empty = new IntegerArrayList();
-		assertEquals(SearchResult.PURE_PREFIX, trie.containsPrefix(empty));
 
 		IntegerList notIn = new IntegerArrayList();
 		notIn.add(1);
 		notIn.add(2);
-		assertEquals(SearchResult.NOT_FOUND, trie.containsPrefix(notIn));
-		assertEquals(SearchResult.PURE_PREFIX, trie.containsPrefix(empty));
 
 		IntegerList one = new IntegerArrayList();
 		one.add(2);
 
-		assertFalse(trie.addToTrie(empty));
-		assertTrue(trie.addToTrie(one));
-		assertFalse(trie.addToTrie(empty));
-		assertEquals(SearchResult.PURE_PREFIX, trie.containsPrefix(empty));
-
-		assertEquals(SearchResult.PERFECT_MATCH, trie.containsPrefix(one));
-		assertEquals(SearchResult.PURE_PREFIX, trie.containsPrefix(empty));
-
 		one.add(1);
-		assertEquals(SearchResult.NOT_FOUND, trie.containsPrefix(one));
 	}
 
 	public void testCountingTrie() {
-		CountingTrie trie = new CountingTrie(4);
+		CountingTrie trie = new CountingTrie();
 		IntegerList string1 = new IntegerArrayList();
 		string1.add(0);
 		string1.add(1);
 		string1.add(2);
 		string1.add(3);
+		string1.add(4);
+		string1.add(5);
+		string1.add(6);
+		string1.add(7);
 		IntegerList string2 = new IntegerArrayList();
+		string2.add(0);
 		string2.add(1);
 		string2.add(2);
 		string2.add(3);
-		trie.addToTrie(string1);
-		trie.addToTrie(string2);
-		assertEquals(SearchResult.PERFECT_MATCH, trie.containsPrefix(string1));
-		assertEquals(SearchResult.PERFECT_MATCH, trie.containsPrefix(string2));
-		assertEquals(2, trie.getSearchCountFor(string1));
-		assertEquals(3, trie.getSearchCountFor(string1));
-		assertEquals(2, trie.getSearchCountFor(string2));
-		assertEquals(3, trie.getSearchCountFor(string2));
-
+		string2.add(4);
 		IntegerList string3 = new IntegerArrayList();
+		string3.add(0);
 		string3.add(1);
 		string3.add(2);
-		assertEquals(0, trie.getSearchCountFor(string3));
+		string3.add(3);
+		string3.add(4);
+		trie.addToTrie(string1);
+		trie.addToTrie(string2);
+		trie.addToTrie(string3);
+		System.out.println("count1 : " + trie.getExistCountFor(string3));
+		IntegerList string4 = new IntegerArrayList();
+		string4.add(0);
+		string4.add(1);
+		string4.add(2);
+		string4.add(3);
+		string4.add(4);
+		trie.addToTrie(string4);
+		System.out.println("count2 : " + trie.getExistCountFor(string3));
+		System.out.println("prefix : " + trie.containsPrefix(string4));
+		
+		String str5 = "我是谁呀";
+		String str6 = "我是谁";
+		String str7 = "我是谁呀谁谁谁谁";
+		IntegerList string5 = String2IntList.formatFor(str5);
+		IntegerList string6 = String2IntList.formatFor(str6);
+		IntegerList string7 = String2IntList.formatFor(str7);
+		
+		trie.addToTrie(string7);
+		trie.addToTrie(string5);
+		trie.addToTrie(string6);
+		
+		System.out.println("count3 : " + trie.getExistCountFor(string5));
+		System.out.println("count3 : " + trie.containsPrefix(string6));
+		
+		List<String> prefixIndex = trie.prefixIndex(string5);
+		for(String index : prefixIndex) {
+			System.out.println("前缀词: " + str5.substring(0, Integer.valueOf(index) + 1));
+		}
+		System.out.println("---------------------------");
+		prefixIndex = trie.prefixIndex(string7);
+		for(String index : prefixIndex) {
+			System.out.println("前缀词: " + str7.substring(0, Integer.valueOf(index) + 1));
+		}
+	}
+	
+	public static void main(String[] args) {
+		TestDoubleArrayTrie testTrie = new TestDoubleArrayTrie();
+		testTrie.testCountingTrie();
 	}
 }

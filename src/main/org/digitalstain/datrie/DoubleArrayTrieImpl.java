@@ -32,13 +32,12 @@ import org.digitalstain.datrie.store.IntegerListFactory;
 
 public class DoubleArrayTrieImpl extends AbstractDoubleArrayTrie {
 
-	// The base array.
-	private IntegerList base;
-	// The check array.
-	private IntegerList check;
 	// The free positions, for quick access
 	private TreeSet<Integer> freePositions;
 
+	public DoubleArrayTrieImpl() {
+		this(65536);
+	}
 	/**
 	 * Constructs a DoubleArrayTrie for the given alphabet length.
 	 * Uses a default IntegerArrayList for storage.
@@ -199,7 +198,11 @@ public class DoubleArrayTrieImpl extends AbstractDoubleArrayTrie {
 	 */
 	@Override
 	protected int getBase(int position) {
-		return base.get(position);
+		int baseValue = base.get(position);
+		if( baseValue < WORD_BASE_VALUE) {
+			baseValue = (-1) * (baseValue - WORD_BASE_VALUE);
+		}
+		return baseValue;
 	}
 
 	/**
@@ -215,6 +218,10 @@ public class DoubleArrayTrieImpl extends AbstractDoubleArrayTrie {
 	 */
 	@Override
 	protected void setBase(int position, int value) {
+		int oldBaseValue = base.get(position);
+		if(oldBaseValue < WORD_BASE_VALUE && value > 0) {
+			value = (-1) * value + WORD_BASE_VALUE;
+		}
 		base.set(position, value);
 		if (value == EMPTY_VALUE) {
 			freePositions.add(new Integer(position));
