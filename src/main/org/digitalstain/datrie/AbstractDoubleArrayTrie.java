@@ -18,6 +18,8 @@
  */
 package org.digitalstain.datrie;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -39,6 +41,11 @@ import org.digitalstain.datrie.store.IntegerList;
  */
 public abstract class AbstractDoubleArrayTrie {
 
+	// The base array.
+	protected IntegerList base;
+	// The check array.
+	protected IntegerList check;
+		
 	// The leaf base value
 	protected static final int LEAF_BASE_VALUE = -2;
 	// The root check value, normally unnecessary
@@ -47,6 +54,8 @@ public abstract class AbstractDoubleArrayTrie {
 	protected static final int EMPTY_VALUE = -1;
 	// The initial offset.
 	protected static final int INITIAL_ROOT_BASE = 1;
+	//如果是词组，则该位置basevalue<-3
+	protected static final int WORD_BASE_VALUE = -3;
 	// The alphabet length
 	protected final int alphabetLength;
 
@@ -92,11 +101,18 @@ public abstract class AbstractDoubleArrayTrie {
 				setCheck(transition, state);
 				if (i == string.size() - 1) { 				// The string is done
 					setBase(transition, LEAF_BASE_VALUE); 	// So this is a leaf
+					updateInsert(transition, i-1, string);
 					changed = true;
 				}
 				else {
-					setBase(transition, nextAvailableHop(string.get(i + 1))); // Add a state
-					changed = true;
+					if(getBase(transition) == LEAF_BASE_VALUE) {
+						setBase(transition, (-1) * nextAvailableHop(string.get(i + 1)) + WORD_BASE_VALUE); // Add a state
+						changed = true;
+					}
+					else if(getBase(transition) >  LEAF_BASE_VALUE) {
+						setBase(transition, nextAvailableHop(string.get(i + 1))); // Add a state
+						changed = true;
+					}
 				}
 			}
 			else if (getCheck(transition) != state) { // We have been through here before
@@ -110,13 +126,26 @@ public abstract class AbstractDoubleArrayTrie {
 				// We must redo this character
 				continue;
 			}
+			else {
+				if(i == string.size() - 1) {
+					int bValue = getBase(transition);
+					setBase(transition, -1 * bValue + WORD_BASE_VALUE);
+					updateInsert(transition, i-1, string);
+				}
+				else {
+					if(getBase(transition) == LEAF_BASE_VALUE) {
+						setBase(transition, (-1) * nextAvailableHop(string.get(i + 1)) + WORD_BASE_VALUE); // Add a state
+						changed = true;
+					}
+				}
+			}
 			/*
 			 * There is another case that is the default and always executed
 			 * by the if above. That is simply transition through the DFA
 			 * and advance the string index. This is done after we notify
 			 * for the transition event.
 			 */ 
-			updateInsert(state, i-1, string);
+			//updateInsert(state, i-1, string);
 			state = transition;
 			i++;
 		}
@@ -231,6 +260,10 @@ public abstract class AbstractDoubleArrayTrie {
 	public SearchResult containsPrefix(IntegerList prefix) {
 		return runPrefix(prefix).result;
 	}
+	
+	public List<String> prefixIndex(IntegerList prefix) {
+		return runPrefix(prefix).prefixList;
+	}
 
 	/**
 	 * This method, at its core, walks a path on the trie. Given a string, it
@@ -249,6 +282,7 @@ public abstract class AbstractDoubleArrayTrie {
 		SearchState result = new SearchState();  // The search result
 		result.prefix = prefix;
 		result.result = SearchResult.PURE_PREFIX; // The default value
+		List<String> prefixList = new ArrayList<String>();
 		// For every input character
 		while (i < prefix.size()) {
 			current = prefix.get(i);
@@ -256,12 +290,18 @@ public abstract class AbstractDoubleArrayTrie {
 			assert current < alphabetLength;
 			transition = getBase(state) + current;	// Get next candidate state
 			if (transition < getSize() && getCheck(transition) == state) {	// If it is valid...
+				if(base.get(transition) < WORD_BASE_VALUE) {
+					result.result = SearchResult.PERFECT_MATCH;
+					prefixList.add("" + i);
+				}
+				
 				if (getBase(transition) == LEAF_BASE_VALUE) {
 				// We reached a leaf. There are two possibilities:
 					if (i == prefix.size() - 1) {
 						// The string has been exhausted. Return perfect match 
 						result.result = SearchResult.PERFECT_MATCH;
-						break;
+						prefixList.add("" + i);
+						//break;
 					} else {
 						// The string still has more to go. Return not found.
 						result.result = SearchResult.NOT_FOUND;
@@ -281,6 +321,7 @@ public abstract class AbstractDoubleArrayTrie {
 		updateSearch(state, i, prefix);
 		result.finishedAtState = state;
 		result.index = i;
+		result.prefixList = prefixList;
 		return result;
 	}
 
@@ -440,5 +481,9 @@ public abstract class AbstractDoubleArrayTrie {
 		 * the other fields of this class.
 		 */
 		protected SearchResult result;
+		/**
+		 * 查找前缀时，前缀词组在原单词中的所有索引位置
+		 */
+		protected List<String> prefixList;
 	}
 }
